@@ -142,3 +142,41 @@ void translate_pad_ds4(const struct ds4report *in, struct ds2report *out, u8 hav
     out->PressureL2 = in->PressureL2;
     out->PressureR2 = in->PressureR2;
 }
+
+void translate_wheel_df(const struct dfreport *in, struct ds2report *out)
+{
+    static const u8 dpad_mapping[] = {
+        (DS2ButtonUp),
+        (DS2ButtonUp | DS2ButtonRight),
+        (DS2ButtonRight),
+        (DS2ButtonDown | DS2ButtonRight),
+        (DS2ButtonDown),
+        (DS2ButtonDown | DS2ButtonLeft),
+        (DS2ButtonLeft),
+        (DS2ButtonUp | DS2ButtonLeft),
+        0,
+    };
+
+    out->nButtonStateL = ~(in->select | in->L3 << 1 | in->R3 << 2 | in->start << 3 | dpad_mapping[in->hat]);
+    out->nButtonStateH = ~(in->L2 | in->R2 << 1 | in->L1 << 2 | in->R1 << 3 | in->triangle << 4 | in->circle << 5 | in->cross << 6 | in->square << 7);
+
+    out->RightStickX = 127; // neutral 0x7F
+    out->RightStickY = 127; // neutral 0x7F
+    out->LeftStickX = in->wheel >> 2; // 8bit conversion
+    out->LeftStickY = 127; // neutral 0x7F
+
+    out->PressureRight = out->nRight ? 0 : 255;
+    out->PressureLeft = out->nLeft ? 0 : 255;
+    out->PressureUp = out->nUp ? 0 : 255;
+    out->PressureDown = out->nDown ? 0 : 255;
+
+    out->PressureTriangle = in->triangle * 255;
+    out->PressureCircle = in->circle * 255;
+    out->PressureCross = 255 - in->gasPedal; // inverted
+    out->PressureSquare = 255 - in->brakePedal; // inverted
+
+    out->PressureL1 = in->L1 * 255;
+    out->PressureR1 = in->R1 * 255;
+    out->PressureL2 = in->L2 * 255;
+    out->PressureR2 = in->R2 * 255;
+}
