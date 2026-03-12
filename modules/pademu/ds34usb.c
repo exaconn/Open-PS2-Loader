@@ -143,7 +143,7 @@ int usb_connect(int devId)
         epCount = interface->bNumEndpoints - 1;
     } else {
         ds34pad[pad].type = DF;
-        epCount = 20;
+        epCount = interface->bNumEndpoints - 1;
     }
 
     endpoint = (UsbEndpointDescriptor *)UsbGetDeviceStaticDescriptor(devId, NULL, USB_DT_ENDPOINT);
@@ -254,7 +254,7 @@ static void usb_config_set(int result, int count, void *arg)
         led[1] = rgbled_patterns[pad][1][1];
         led[2] = rgbled_patterns[pad][1][2];
         led[3] = 0;
-    } else if (ds34pad[pad].type == DF) {
+    }/* else if (ds34pad[pad].type == DF) {
         usb_buf[0] = 0xF8;
         usb_buf[1] = 0x09;
         usb_buf[2] = 0x00;
@@ -265,7 +265,7 @@ static void usb_config_set(int result, int count, void *arg)
         
         UsbInterruptTransfer(ds34pad[pad].outEndp, usb_buf, 7, NULL, NULL);
         DelayThread(10000);
-    }
+    }*/
 
     LEDRumble(led, 0, 0, pad);
 
@@ -297,29 +297,7 @@ static void readReport(u8 *data, int pad_idx)
         translate_pad_guitar(report, &pad->ds2, pad->type == GUITAR_GH);
         padMacroPerform(&pad->ds2, report->PSButton);
     }
-    /*
-    if (pad->type == DF) {
-        struct dfreport *report;
-        report = (struct dfreport *)data;
-        translate_wheel_df(report, &pad->ds2);
-
-        if (report->L3) {                                                 //display battery level
-            if (report->R3 && (pad->btn_delay == MAX_DELAY)) { //XBOX + BACK
-                if (pad->analog_btn < 2)                         //unlocked mode
-                    pad->analog_btn = !pad->analog_btn;
-
-                pad->btn_delay = 1;
-            } else {
-                if (pad->btn_delay < MAX_DELAY)
-                    pad->btn_delay++;
-            }
-        } else {
-            if (pad->btn_delay > 0)
-                pad->btn_delay--;
-        }
-        
-    }
-    */
+    
     if (data[0]) {
 
         if (pad->type == DS3) {
