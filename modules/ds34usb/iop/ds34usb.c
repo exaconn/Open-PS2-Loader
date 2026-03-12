@@ -89,9 +89,14 @@ int usb_probe(int devId)
         return 0;
     }
 
-    if (device->idVendor == DS34_VID && (device->idProduct == DS3_PID || device->idProduct == DS4_PID || device->idProduct == DS4_PID_SLIM))
+    if (device->idVendor == DS34_VID && (device->idProduct == DS3_PID || device->idProduct == DS4_PID || device->idProduct == DS4_PID_SLIM)) {
         return 1;
-
+    }
+    
+    if (device->idVendor == LG_VID) {
+        return 1;
+    }
+    
     return 0;
 }
 
@@ -130,9 +135,12 @@ int usb_connect(int devId)
     if (device->idProduct == DS3_PID) {
         ds34pad[pad].type = DS3;
         epCount = interface->bNumEndpoints - 1;
-    } else {
+    } else if (device->idProduct == DS4_PID || device->idProduct == DS4_PID_SLIM){
         ds34pad[pad].type = DS4;
         epCount = 20; // ds4 v2 returns interface->bNumEndpoints as 0
+    } else {
+        ds34pad[pad].type = DF;
+        epCount = interface->bNumEndpoints - 1;
     }
 
     endpoint = (UsbEndpointDescriptor *)UsbGetDeviceStaticDescriptor(devId, NULL, USB_DT_ENDPOINT);
@@ -401,6 +409,72 @@ static void readReport(u8 *data, int pad)
                 ds34pad[pad].oldled[3] = 1;
             else
                 ds34pad[pad].oldled[3] = 0;
+        } else if (ds34pad[pad].type == DF) {
+            struct dfreport *report;
+            u8 up = 0, down = 0, left = 0, right = 0;
+
+            report = (struct dfreport *)data;
+
+            switch (report->hat) {
+                case 0:
+                    up = 1;
+                    break;
+                case 1:
+                    up = 1;
+                    right = 1;
+                    break;
+                case 2:
+                    right = 1;
+                    break;
+                case 3:
+                    down = 1;
+                    right = 1;
+                    break;
+                case 4:
+                    down = 1;
+                    break;
+                case 5:
+                    down = 1;
+                    left = 1;
+                    break;
+                case 6:
+                    left = 1;
+                    break;
+                case 7:
+                    up = 1;
+                    left = 1;
+                    break;
+                case 8:
+                    up = 0;
+                    down = 0;
+                    left = 0;
+                    right = 0;
+                    break;
+            
+            }
+            
+            ds34pad[pad].data[0] = ~(report->select | report->L3 << 1 | report->R3 << 2 | report->start << 3 | up << 4 | right << 5 | down << 6 | left << 7);
+            ds34pad[pad].data[1] = ~(report->L2 | report->R2 << 1 | report->L1 << 2 | report->R1 << 3 | report->triangle << 4 | report->circle << 5 | report->cross << 6 | report->square << 7);
+               
+            ds34pad[pad].data[2] = 127;
+            ds34pad[pad].data[3] = 127;
+            ds34pad[pad].data[4] = report->wheel >> 2; // 8bit conversion
+            ds34pad[pad].data[5] = 127;
+            
+            ds34pad[pad].data[6] = right * 255; // right
+            ds34pad[pad].data[7] = left * 255;  // left
+            ds34pad[pad].data[8] = up * 255;    // up
+            ds34pad[pad].data[9] = down * 255;  // down
+
+            ds34pad[pad].data[10] = report->triangle * 255; // triangle
+            ds34pad[pad].data[11] = report->circle * 255;   // circle
+            ds34pad[pad].data[12] = 255 - report->gasPedal; // inverted    // cross
+            ds34pad[pad].data[13] = 255 - report->brakePedal; // inverted    // square
+
+            ds34pad[pad].data[14] = report->L1 * 255;   // L1
+            ds34pad[pad].data[15] = report->R1 * 255;   // R1
+            ds34pad[pad].data[16] = report->L2 * 255; // L2
+            ds34pad[pad].data[17] = report->R2 * 255; // R2
         }
     }
 }
