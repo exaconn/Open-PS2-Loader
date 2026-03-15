@@ -289,6 +289,31 @@ static void DS3USB_init(int pad)
 static void readReport(u8 *data, int pad_idx)
 {
     ds34usb_device *pad = &ds34pad[pad_idx];
+
+    if (pad->type == DF) {
+        struct dfreport *report;
+        
+        report = (struct dfreport *)data;
+        
+        translate_wheel_df(report, &pad->ds2);
+        padMacroPerform(&pad->ds2, report->L3);
+
+        if (report->L3) {                                      //display battery level
+            if (report->R3 && (pad->btn_delay == MAX_DELAY)) { //L3 + R3
+                if (pad->analog_btn < 2)                         //unlocked mode
+                    pad->analog_btn = !pad->analog_btn;
+
+                pad->btn_delay = 1;
+            } else {
+                if (pad->btn_delay < MAX_DELAY)
+                    pad->btn_delay++;
+            }
+        } else {
+            if (pad->btn_delay > 0)
+                pad->btn_delay--;
+        }    
+    }
+    
     if (pad->type == GUITAR_GH || pad->type == GUITAR_RB) {
         struct ds3guitarreport *report;
 
@@ -375,28 +400,8 @@ static void readReport(u8 *data, int pad_idx)
                 pad->oldled[3] = 1;
             else
                 pad->oldled[3] = 0;
-        } else if (pad->type == DF) {
-            struct dfreport *report;
-            report = (struct dfreport *)data;
-            translate_wheel_df(report, &pad->ds2);
-
-            if (report->L3) {                                      //display battery level
-                if (report->R3 && (pad->btn_delay == MAX_DELAY)) { //L3 + R3
-                    if (pad->analog_btn < 2)                         //unlocked mode
-                        pad->analog_btn = !pad->analog_btn;
-
-                    pad->btn_delay = 1;
-                } else {
-                    if (pad->btn_delay < MAX_DELAY)
-                        pad->btn_delay++;
-                }
-            } else {
-                if (pad->btn_delay > 0)
-                    pad->btn_delay--;
-            }
-            
         }
-    
+
         if (pad->btn_delay > 0) {
             pad->update_rum = 1;
         }
