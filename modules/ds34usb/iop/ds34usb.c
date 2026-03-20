@@ -252,7 +252,20 @@ static void usb_config_set(int result, int count, void *arg)
         led[2] = rgbled_patterns[pad][1][2];
         led[3] = 0;
     }
-
+    
+    if (ds34pad[pad].type == DF) { 
+        usb_buf[0] = 0xFE; // auto-cenetering all axes
+        usb_buf[1] = 0x00;
+        usb_buf[2] = 0x00;
+        usb_buf[3] = 0x00;
+        usb_buf[4] = 0xFE; // strong
+        usb_buf[5] = 0x00;
+        usb_buf[6] = 0x00;
+        
+        UsbInterruptTransfer(ds34pad[pad].outEndp, usb_buf, 7, NULL, NULL);
+        DelayThread(10000);
+    }
+    
     LEDRumble(led, 0, 0, pad);
     DelayThread(20000);
 
