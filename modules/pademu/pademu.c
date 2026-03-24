@@ -54,6 +54,7 @@ typedef struct
     u8 mask[4];
 } pad_status_t;
 
+#define NEGCON_MODE 0x23
 #define DIGITAL_MODE 0x41
 #define ANALOG_MODE  0x73
 #define ANALOGP_MODE 0x79
@@ -284,9 +285,9 @@ void pademu_setup(u8 ports, u8 vib)
     u8 i;
 
     for (i = 0; i < MAX_PORTS; i++) {
-        pad[i].mode = 0;
+        pad[i].mode = 2;
         pad[i].mode_p = 0;
-        pad[i].mode_id = DIGITAL_MODE;
+        pad[i].mode_id = NEGCON_MODE;
         pad[i].mode_cfg = 0;
         pad[i].mode_lock = 0;
 
@@ -438,9 +439,11 @@ void pademu_cmd(int port, u8 *in, u8 *out, u8 out_size)
                     pad[port].mode = i;
 
                     if (pad[port].mode)
-                        pad[port].mode_id = ANALOG_MODE;
+                        pad[port].mode_id = NEGCON_MODE;
+                        //pad[port].mode_id = ANALOG_MODE;
                     else
-                        pad[port].mode_id = DIGITAL_MODE;
+                        pad[port].mode_id = NEGCON_MODE;
+                        //pad[port].mode_id = DIGITAL_MODE;
                 }
             }
 
@@ -452,12 +455,15 @@ void pademu_cmd(int port, u8 *in, u8 *out, u8 out_size)
             pad[port].mode_lock = in[4];
             if (pad[port].mode) {
                 if (pad[port].mode_p) {
-                    pad[port].mode_id = ANALOGP_MODE;
+                    pad[port].mode_id = NEGCON_MODE;
+                    //pad[port].mode_id = ANALOG_MODE;
                 } else {
-                    pad[port].mode_id = ANALOG_MODE;
+                    pad[port].mode_id = NEGCON_MODE;
+                    //pad[port].mode_id = ANALOG_MODE;
                 }
             } else {
-                pad[port].mode_id = DIGITAL_MODE;
+                pad[port].mode_id = NEGCON_MODE;
+                //pad[port].mode_id = DIGITAL_MODE;
             }
             PAD_SET_MODE(pad[port].mode, pad[port].mode_lock, port);
             break;
@@ -482,9 +488,9 @@ void pademu_cmd(int port, u8 *in, u8 *out, u8 out_size)
 
         case 0x4C: // query mode
             if (in[3] == 0x00)
-                out[6] = 0x04;
+                out[6] = 0x02; // 0x04;
             else
-                out[6] = 0x07;
+                out[6] = 0x02; // 0x07;
 
             break;
 
