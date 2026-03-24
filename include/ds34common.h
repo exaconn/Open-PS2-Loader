@@ -14,6 +14,9 @@
 #define GUITAR_HERO_PS3_PID 0x0100 // PS3 Guitar Hero Guitar
 #define ROCK_BAND_PS3_PID   0x0200 // PS3 Rock Band Guitar
 
+#define LG_VID        0x046D // Logitech
+#define DF_PID            0xC294 // Logitech Formula Force RX
+
 // NOTE: struct member prefixed with "n" means it's active-low (i.e. value of 0 indicates button is pressed, value 1 is released)
 enum DS2ButtonBitNumber {
     DS2BtnBit_Select = 0,
@@ -53,6 +56,43 @@ enum DS2Buttons {
     DS2ButtonCross = (1 << 14),
     DS2ButtonSquare = (1 << 15),
 };
+
+struct ncreport
+{
+    union
+    {
+        uint16_t nButtonState;
+        struct
+        {
+            uint8_t nButtonStateL; // Main buttons low byte (active-low)
+            uint8_t nButtonStateH; // Main buttons high byte (active-low)
+        };
+        struct
+        {
+            uint16_t nNone0    : 1; // always 1
+            uint16_t nNone1    : 1; // always 1
+            uint16_t nNone2    : 1; // always 1
+            uint16_t nStart    : 1;
+            uint16_t nUp       : 1;
+            uint16_t nRight    : 1;
+            uint16_t nDown     : 1;
+            uint16_t nLeft     : 1;
+            uint16_t nNone8    : 1; // always 1
+            uint16_t nNone9    : 1; // always 1
+            uint16_t nNone10   : 1; // always 1
+            uint16_t nR        : 1;
+            uint16_t nB        : 1;
+            uint16_t nA        : 1;
+            uint16_t nNone14   : 1; // always 1
+            uint16_t nNone15   : 1; // always 1
+        };
+    };
+    uint8_t SteeringAxis;
+    uint8_t AnalogI;
+    uint8_t AnalogII;
+    uint8_t AnalogL;
+
+} __attribute__((packed));
 
 struct ds2report
 {
@@ -281,6 +321,40 @@ struct ds4report
     uint16_t Finger2Y      : 12;
 
 } __attribute__((packed));
+
+// Driving Force
+struct dfreport
+{
+  //uint8_t ReportID; // ?
+  uint16_t wheel : 10;
+  uint8_t cross : 1;
+  uint8_t square : 1;
+  uint8_t circle : 1;
+  uint8_t triangle : 1;
+  uint8_t R1 : 1;
+  uint8_t L1 : 1;
+
+  uint8_t R2 : 1;
+  uint8_t L2 : 1;
+  uint8_t select : 1;
+  uint8_t start : 1;
+  uint8_t R3 : 1;
+  uint8_t L3 : 1;
+  uint8_t pedal_connected : 1; // not sure. DFWireless reports as zero
+  uint8_t power_connected : 1; //not sure. DFWireless reports as zero
+
+  uint8_t pedals; // combined pedals
+  uint8_t hat : 4;
+  uint8_t : 1; // allways 0
+  uint8_t calibrated : 1; //not sure (or ready to use?)
+  uint8_t : 1; // allways 0
+  uint8_t unknown : 1; // allways 1? DFWireless uses this as PS button
+  uint8_t gasPedal; // 255 - neutrall, 0 - fully pressed
+  uint8_t brakePedal;
+} __attribute__((packed));
+
+void translate_wheel_negcon(const struct dfreport *in, struct ncreport *out);
+void translate_wheel_df(const struct dfreport *in, struct ds2report *out);
 
 /**
  * Translate DS3 pad data into DS2 pad data.
